@@ -1,0 +1,15 @@
+#Frontend / UI
+
+chainlit>=1.1.306
+
+#LLM Integration (Native client is lighter than LangChain wrappers)
+
+ollama>=0.2.1
+
+#Data Validation & Strict Output Schemas
+
+pydantic>=2.7.1
+
+#Graph Orchestration (The Brain)
+
+langgraph>=0.0.65
