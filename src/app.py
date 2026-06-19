@@ -4,7 +4,7 @@ import json
 # Import your compiled LangGraph pipeline
 from workflow import ielts_pipeline
 from database import get_user_weaknesses, save_evaluation
-from database import get_user_weaknesses, save_evaluation, init_db
+from database import get_user_weaknesses, save_evaluation, init_db, get_random_topic
 
 @cl.on_chat_start
 @cl.on_chat_start
@@ -19,6 +19,7 @@ async def on_chat_start():
     I am a strict, deterministic evaluation pipeline. I will NOT rewrite your essay.
     
     **Available Commands:**
+    * `/topic` - Get a random IELTS Task 2 topic.
     * `/drill_intro [your text]` - Fast analysis of an introduction paragraph.
     * `/full [your text]` - Complete 4-criteria evaluation of a full essay.
     """
@@ -31,21 +32,37 @@ async def main(message: cl.Message):
     text = message.content.strip()
     
     # 1. Parse the Command
-    if text.startswith("/drill_intro"):
+    mode = None
+    essay_text = ""
+
+    if text.startswith("/topic"):
+        topic_data = get_random_topic()
+        topic_text = topic_data.get("topic_text", "No topic found.")
+        cl.user_session.set("current_topic", topic_text)
+        await cl.Message(content=f"**Here's your IELTS Task 2 Topic:**\n\n{topic_text}\n\n"
+                                 f"Now you can write your essay using `/full [your essay]` "
+                                 f"or `/drill_intro [your introduction]`.").send()
+        return
+    elif text.startswith("/drill_intro"):
         mode = "/drill_intro"
         essay_text = text.replace("/drill_intro", "").strip()
     elif text.startswith("/full"):
         mode = "/full"
         essay_text = text.replace("/full", "").strip()
     else:
-        await cl.Message(content="⚠️ Please start your message with `/full` or `/drill_intro`.").send()
+        await cl.Message(content="⚠️ Please start your message with `/topic`, `/full` or `/drill_intro`.").send()
         return
         
     if not essay_text:
         await cl.Message(content="⚠️ Please provide an essay after the command.").send()
         return
 
-    
+    # Retrieve current topic from session
+    current_topic = cl.user_session.get("current_topic")
+    if not current_topic:
+        await cl.Message(content="⚠️ Please request a topic first using `/topic` before submitting your writing.").send()
+        return
+
     # 2. Setup the Initial State (Now pulling from SQLite!)
     user_id = 1 # Hardcoded for local testing
     live_weaknesses = get_user_weaknesses(user_id)
@@ -53,6 +70,7 @@ async def main(message: cl.Message):
     initial_state = {
         "mode": mode,
         "essay_text": essay_text,
+        "topic_text": current_topic, # Inject the topic here
         "user_weaknesses": live_weaknesses, 
         "grammar_errors": [],
         "vocab_suggestions": [],
@@ -80,6 +98,9 @@ async def main(message: cl.Message):
         ui_response = f"""
 ### 🎯 Introduction Drill Evaluation
 
+**Topic:**
+{current_topic}
+
 **Hook Analysis:**
 {feedback.get('hook_evaluation', 'N/A')}
 
@@ -93,6 +114,9 @@ async def main(message: cl.Message):
         ui_response = f"""
 ### 📝 Full Essay Evaluation
 **Estimated Band Score: {feedback.get('band_score', 'N/A')}**
+
+**Topic:**
+{current_topic}
 
 **Overall Comments:**
 {feedback.get('overall_comments', 'N/A')}
