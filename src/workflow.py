@@ -73,6 +73,9 @@ def intro_examiner_node(state: EvaluationState):
     prompt = f"""
     You are a Senior IELTS Examiner evaluating an isolated introduction paragraph. 
 
+    TOPIC:
+    {state['topic_text']}
+
     EVALUATION RUBRIC:
     {rubric_text}
 
@@ -102,6 +105,9 @@ def full_examiner_node(state: EvaluationState):
     rubric_text = read_rubric("full_essay.md")
     prompt = f"""
     You are the Lead Senior IELTS Examiner. Calculate a final Band Score for this full essay.
+
+    TOPIC:
+    {state['topic_text']}
 
     EVALUATION RUBRIC:
     {rubric_text}
