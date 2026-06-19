@@ -5,8 +5,11 @@ from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
 from ollama import Client
 
+# Import from your models.py
+# Assuming you added VocabResponse and FullExaminerResponse there
 from models import EvaluationState, GrammarResponse, IntroExaminerResponse, VocabResponse, FullExaminerResponse
 
+# Initialize the local Ollama client
 client = Client(host='http://localhost:11434')
 
 # --- HELPER FUNCTION ---
