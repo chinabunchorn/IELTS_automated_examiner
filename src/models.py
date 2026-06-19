@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class EvaluationState(TypedDict):
     mode: str                  # '/full' or '/drill_intro'
     essay_text: str            # The text the user submitted
+    topic_text: str            # The topic text injected from SQLite
     user_weaknesses: str       # Injected from SQLite
     grammar_errors: List[str]  # Populated by the Grammarian Node
     vocab_suggestions: List[str] # Populated by the Lexicographer Node (if full mode)
