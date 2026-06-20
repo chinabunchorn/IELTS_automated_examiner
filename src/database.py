@@ -5,8 +5,7 @@ import os
 # Get the absolute path of the project root folder
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "data", "state.sqlite")
-TOPICS_FILE_PATH = os.path.join(BASE_DIR, "topics.json")
-
+TOPICS_FILE_PATH = os.path.join(BASE_DIR, "data", "topics.json")
 def init_db():
     """Creates the tables and seeds seed data if missing."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -29,13 +28,16 @@ def init_db():
         cursor.execute('SELECT COUNT(*) FROM Topics')
         if cursor.fetchone()[0] == 0:
             if os.path.exists(TOPICS_FILE_PATH):
-                with open(TOPICS_FILE_PATH, 'r') as f:
+                with open(TOPICS_FILE_PATH, 'r', encoding='utf-8') as f:
                     topics_data = json.load(f)
-                topics_to_insert = [(topic,) for topic in topics_data]
+                
+                # ดึงเฉพาะ value จาก key "topic_text" ของแต่ละ dictionary
+                topics_to_insert = [(topic['topic_text'],) for topic in topics_data]
+                
                 cursor.executemany('INSERT INTO Topics (topic_text) VALUES (?)', topics_to_insert)
+                print("✅ Seeded topics from JSON successfully.")
             else:
-                print(f"Warning: topics.json not found at {TOPICS_FILE_PATH}. No topics seeded.")
-        conn.commit()
+                print(f"⚠️ Warning: topics.json not found at {TOPICS_FILE_PATH}. No topics seeded.")
 
 def get_user_weaknesses(user_id: int) -> str:
     with sqlite3.connect(DB_PATH) as conn:

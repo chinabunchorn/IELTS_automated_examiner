@@ -78,7 +78,7 @@ async def main(message: cl.Message):
     }
 
     # 3. Stream the LangGraph execution to the UI
-    final_state = None
+    final_state = dict(initial_state) 
     
     # LangGraph's .astream() yields updates after every node finishes!
     async for event in ielts_pipeline.astream(initial_state):
@@ -88,8 +88,8 @@ async def main(message: cl.Message):
             async with cl.Step(name=f"Agent: {node_name.capitalize()}") as step:
                 step.output = f"Finished processing."
             
-            # Keep track of the latest state
-            final_state = node_state
+            # [แก้ไข 2] ใช้คำสั่ง .update() เพื่อผสมข้อมูลใหม่เข้าไปสะสมรวมกับข้อมูลเดิม
+            final_state.update(node_state)
 
     # 4. Format the final Pydantic JSON output into a beautiful Markdown message
     feedback = final_state.get("final_feedback", {})

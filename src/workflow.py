@@ -42,6 +42,7 @@ def grammar_node(state: EvaluationState):
         options={'temperature': 0.0}
     )
     result = json.loads(response['message']['content'])
+    print(f"\n[DEBUG - Grammar Node] จับผิดเจอสิ่งนี้:\n{json.dumps(result, indent=2)}\n")
     return {"grammar_errors": result.get("grammar_errors", [])}
 
 # --- AGENT 2: THE LEXICOGRAPHER (Full Route Only) ---
@@ -106,7 +107,7 @@ def full_examiner_node(state: EvaluationState):
     prompt = f"""
     You are the Lead Senior IELTS Examiner. Calculate a final Band Score for this full essay.
 
-    TOPIC:
+    TOPIC (CRITICAL - YOU MUST EVALUATE AGAINST THIS EXACT PROMPT):
     {state['topic_text']}
 
     EVALUATION RUBRIC:
@@ -117,11 +118,13 @@ def full_examiner_node(state: EvaluationState):
     - Vocab Suggestions: {state.get('vocab_suggestions', [])}
     Use these to inform your Lexical Resource and Grammatical Range scoring. Do not list them again.
 
-    INSTRUCTIONS:
-    1. Calculate the estimated overall Band Score (0.0 to 9.0).
-    2. Write a diagnostic "overall comments" summary focusing on Task Achievement and Coherence.
-    3. DO NOT write a new essay.
-    4. Output strictly in JSON format.
+    INSTRUCTIONS & CHAIN OF THOUGHT:
+    1. OFF-TOPIC TRAP CHECK: You must rigorously check for tangents. Does every single paragraph directly answer the TOPIC provided above?
+    2. If the writer discusses unrelated concepts, you MUST severely penalize the Task Achievement score (maximum Band 5.0 for Task Achievement).
+    3. In your "overall_comments", explicitly call out any off-topic sentences or paragraphs first, then summarize Task Achievement and Coherence.
+    4. Calculate the estimated overall Band Score (0.0 to 9.0).
+    5. DO NOT write a new essay.
+    6. Output strictly in JSON format.
 
     TEXT:
     {state['essay_text']}
