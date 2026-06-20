@@ -5,6 +5,7 @@ import os
 # Get the absolute path of the project root folder
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "data", "state.sqlite")
+TOPICS_FILE_PATH = os.path.join(BASE_DIR, "topics.json")
 
 def init_db():
     """Creates the tables and seeds seed data if missing."""
@@ -24,15 +25,16 @@ def init_db():
             cursor.execute('INSERT INTO UserWeaknesses (user_id, category, description) VALUES (1, "Grammar", "Frequent misuse of Present Perfect tense.")')
             cursor.execute('INSERT INTO UserWeaknesses (user_id, category, description) VALUES (1, "Coherence", "Struggles to write a clear thesis statement.")')
 
-        # Seed logic for Topics
+        # Seed logic for Topics from topics.json
         cursor.execute('SELECT COUNT(*) FROM Topics')
         if cursor.fetchone()[0] == 0:
-            topics_to_insert = [
-                ("Some people believe that the best way to improve public health is by increasing the number of sports facilities. Others think that this is not enough and that other measures are required. Discuss both views and give your own opinion.",),
-                ("In many countries, owning a home is considered a fundamental right. However, for many people, this is becoming increasingly difficult. What are the reasons for this? What can be done to address this problem?",),
-                ("Technological advancements have made it possible for many people to work from home. Do the advantages of this outweigh the disadvantages for both individuals and companies?",)
-            ]
-            cursor.executemany('INSERT INTO Topics (topic_text) VALUES (?)', topics_to_insert)
+            if os.path.exists(TOPICS_FILE_PATH):
+                with open(TOPICS_FILE_PATH, 'r') as f:
+                    topics_data = json.load(f)
+                topics_to_insert = [(topic,) for topic in topics_data]
+                cursor.executemany('INSERT INTO Topics (topic_text) VALUES (?)', topics_to_insert)
+            else:
+                print(f"Warning: topics.json not found at {TOPICS_FILE_PATH}. No topics seeded.")
         conn.commit()
 
 def get_user_weaknesses(user_id: int) -> str:
