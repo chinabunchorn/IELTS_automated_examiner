@@ -3,10 +3,8 @@ import json
 
 # Import your compiled LangGraph pipeline
 from workflow import ielts_pipeline
-from database import get_user_weaknesses, save_evaluation
 from database import get_user_weaknesses, save_evaluation, init_db, get_random_topic
 
-@cl.on_chat_start
 @cl.on_chat_start
 async def on_chat_start():
     """Runs when the web server boots up for the user."""
@@ -158,6 +156,6 @@ async def main(message: cl.Message):
         """
 
     # Send the final formatted message to the user
-    
-    save_evaluation(user_id, mode, essay_text, feedback)
+    grammar_errors = final_state.get("grammar_errors", [])
+    save_evaluation(user_id, mode, essay_text, feedback,grammar_errors)
     await cl.Message(content=ui_response).send()

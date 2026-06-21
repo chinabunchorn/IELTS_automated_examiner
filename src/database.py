@@ -21,8 +21,6 @@ def init_db():
         cursor.execute('SELECT COUNT(*) FROM Users')
         if cursor.fetchone()[0] == 0:
             cursor.execute('INSERT INTO Users (username) VALUES ("Chin_Test")')
-            cursor.execute('INSERT INTO UserWeaknesses (user_id, category, description) VALUES (1, "Grammar", "Frequent misuse of Present Perfect tense.")')
-            cursor.execute('INSERT INTO UserWeaknesses (user_id, category, description) VALUES (1, "Coherence", "Struggles to write a clear thesis statement.")')
 
         # Seed logic for Topics from topics.json
         cursor.execute('SELECT COUNT(*) FROM Topics')
@@ -49,15 +47,31 @@ def get_user_weaknesses(user_id: int) -> str:
         weaknesses = [f"- {row[0]}: {row[1]}" for row in rows]
         return "\n".join(weaknesses)
 
-def save_evaluation(user_id: int, mode: str, original_text: str, feedback_dict: dict):
+def save_evaluation(user_id: int, mode: str, original_text: str, feedback_dict: dict, grammar_errors: list = None):
+    print(f"\n[DEBUG - Database] ข้อมูลที่รับเข้ามาเพื่อ Save:\nMode: {mode}\nFeedback Keys: {feedback_dict.keys()}\nGrammar Errors: {len(grammar_errors) if grammar_errors else 0} items\n")
+    
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
+        
         feedback_json = json.dumps(feedback_dict)
         cursor.execute('''
             INSERT INTO Essays (user_id, mode, original_text, feedback_json)
             VALUES (?, ?, ?, ?)
         ''', (user_id, mode, original_text, feedback_json))
+        
+        if grammar_errors:
+            for error in grammar_errors:
+                if isinstance(error, dict) and "error_category" in error and "mistake" in error:
+                    category = error["error_category"]
+                    description = f"Mistake: {error['mistake']} | Correction: {error['correction']}"
+                    
+                    cursor.execute('''
+                        INSERT INTO UserWeaknesses (user_id, category, description)
+                        VALUES (?, ?, ?)
+                    ''', (user_id, category, description))
+        
         conn.commit()
+        print("[DEBUG - Database] Transaction Completed: Saved Essay and Updated Weaknesses.")
 
 def get_random_topic() -> dict:
     """Queries the database, picks one random topic, and returns it as a dictionary."""
